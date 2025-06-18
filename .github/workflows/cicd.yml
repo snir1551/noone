@@ -1,0 +1,56 @@
+name: ManageUsers CICD
+
+on:
+  push: # Runs on every push
+    branches:
+      - master
+    tags:
+      - 'v*.*.*'
+  pull_request: # Runs on pull request
+  workflow_dispatch: # Can be run manually
+
+jobs:
+  backend-test:
+    uses: ./.github/workflows/backend-test.yml
+
+  frontend-test:
+    uses: ./.github/workflows/frontend-test.yml
+  
+  debug-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug Secrets
+        run: |
+          echo "AZURE_PRIVATE_KEY: ${{ secrets.AZURE_PRIVATE_KEY }}"
+          echo "AZURE_USER: ${{ secrets.AZURE_USER }}"
+          echo "AZURE_HOST: ${{ secrets.AZURE_HOST }}"
+          echo "REMOTE_PORT: ${{ secrets.REMOTE_PORT }}"
+        shell: bash
+        
+  deploy:
+    uses: ./.github/workflows/deploy-VM.yml
+    secrets: 
+      AZURE_PRIVATE_KEY: ${{ secrets.AZURE_PRIVATE_KEY }}
+      AZURE_USER: ${{ secrets.AZURE_USER }}
+      AZURE_HOST: ${{ secrets.AZURE_HOST }}
+      REMOTE_PORT: ${{ secrets.REMOTE_PORT }}
+      
+  backend-notify:
+    needs: [backend-test]
+    if: always()
+    uses: ./.github/workflows/notify-backend.yml
+    with:
+      job_start_time: ${{ needs.backend-test.outputs.job_start_time }}
+      test_status: ${{ needs.backend-test.result }}
+      build_status: ${{ needs.backend-docker-build.result }}
+    secrets: inherit
+
+  frontend-notify:
+    needs: [frontend-test]
+    if: always()
+    uses: ./.github/workflows/notify-frontend.yml
+    with:
+      job_start_time: ${{ needs.frontend-test.outputs.job_start_time }}
+      test_status: ${{ needs.frontend-test.result }}
+      build_status: ${{ needs.frontend-docker-build.result }}
+    secrets: inherit

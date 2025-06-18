@@ -1,0 +1,45 @@
+name: CD - Deploy to Azure VM Task7
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.AZURE_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+      - name: Sync files to Azure VM
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.VM_HOST }} "mkdir -p /home/snir1551/week7practice"
+          rsync -az --delete --exclude='.git' --exclude='node_modules' -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./ ${{ secrets.VM_HOST }}:/home/snir1551/week7practice/
+      - name: Deploy with Docker Compose
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.VM_HOST }} "
+            cd /home/snir1551/week7practice &&
+            sudo docker-compose down --remove-orphans &&
+            sudo docker-compose up -d --build
+          "
+      - name: Healthcheck & logs
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.VM_HOST }} "
+            cd /home/snir1551/week7practice
+            sudo docker-compose ps
+            sudo docker-compose logs --tail=50
+          " > remote_logs.txt
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-logs
+          path: remote_logs.txt
+
+      - name: Cleanup SSH key
+        run: rm key.pem
