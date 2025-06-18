@@ -24,7 +24,7 @@ jobs:
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='.github' \
-            -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./ ${{ secrets.VM_HOST }}:~/week7practice/
+            -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./week7_summery ${{ secrets.VM_HOST }}:~/week7practice/
       - name: Deploy with Docker Compose
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.VM_HOST }} "
