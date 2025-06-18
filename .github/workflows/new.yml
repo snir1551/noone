@@ -21,10 +21,10 @@ jobs:
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.VM_HOST }} "mkdir -p ~/week7practice"
           rsync -az --delete \
-          --exclude='.git' \
-          --exclude='node_modules' \
-          --exclude='.github' \  # לא חובה, אבל מומלץ
-          -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./ ${{ secrets.VM_HOST }}:~/week7practice/
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.github' \
+            -e "ssh -i key.pem -o StrictHostKeyChecking=no" ./ ${{ secrets.VM_HOST }}:~/week7practice/
       - name: Deploy with Docker Compose
         run: |
           ssh -i key.pem -o StrictHostKeyChecking=no ${{ secrets.VM_HOST }} "
